@@ -2,7 +2,7 @@
   (:require [clojure.test :refer [deftest testing is are]]
             [girouette.tw.default-api :refer [tw-v3-class-name->garden]]
             [girouette.tw.common :refer [dot]]
-            [girouette.garden.util :refer [apply-class-rules]]))
+            [girouette.garden.util :refer [apply-class-rules rule-comparator]]))
 
 (deftest apply-class-rules-test
   (are [target-class-name gi-class-names expected-garden]
@@ -26,3 +26,22 @@
                                           :rules [[".my-class" {:padding "0.25rem"
                                                                 :margin "0.25rem"}]
                                                   [".my-class" [:&:hover {:padding "0.5rem"}]]]}})))
+
+(deftest rule-comparator-sorting-test
+  (are [rule1 rule2 comparison]
+      (= (rule-comparator
+           (tw-v3-class-name->garden rule1)
+           (tw-v3-class-name->garden rule2))
+         comparison)
+
+    "md:grid-cols-1"
+    "lg:grid-cols-1"
+    -1
+
+    "md:grid-cols-2"
+    "grid-cols-1"
+    1
+
+    "md:grid-cols-1"
+    "dark:text-white"
+    1))

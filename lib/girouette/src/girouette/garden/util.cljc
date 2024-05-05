@@ -1,5 +1,6 @@
 (ns girouette.garden.util
   (:require [clojure.spec.alpha :as s]
+            [clojure.string :as string]
             [clojure.walk :as walk]
             #?(:clj [garden.types]
                :cljs [garden.types :refer [CSSAtRule]])
@@ -58,6 +59,19 @@
             gi-class-names)
        merge-rules))
 
+(defn- px-str->int
+  [s]
+  (some-> s
+          (string/replace #"px$" "")
+          #?(:clj (Long.)
+             :cljs (js/parseInt 10))))
+
+(defn- media-query-priority
+  [rule]
+  (or (some-> (get-in rule [:value :media-queries :min-width])
+              px-str->int)
+      0))
+
 (defn rule-comparator
   "Compares the Garden rules provided by Girouette,
    so they can be ordered correctly in a style file."
@@ -66,6 +80,7 @@
                              (= (:identifier rule1) :media))
         is-media-query2 (and (instance? CSSAtRule rule2)
                              (= (:identifier rule2) :media))]
-    (compare [is-media-query1 (-> rule1 meta :girouette/component :ordering-level)]
-             [is-media-query2 (-> rule2 meta :girouette/component :ordering-level)])))
-
+    (compare [is-media-query1 (if is-media-query1 (media-query-priority rule1) 0)
+              (-> rule1 meta :girouette/component :ordering-level)]
+             [is-media-query2 (if is-media-query2 (media-query-priority rule2) 0)
+              (-> rule2 meta :girouette/component :ordering-level)])))
