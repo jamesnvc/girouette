@@ -72,15 +72,46 @@
               px-str->int)
       0))
 
+(def variant-priority-order
+  {"hover" 1
+   "active" 2})
+
+(defn- state-prefix-priority
+  [rule]
+  (if-let [variants (get-in (meta rule) [:girouette/props :prefixes :state-variants])]
+    (->> (keep (fn [[v-type variant]]
+                 (when (= v-type :plain-state-variant) variant))
+               variants)
+         (map-indexed
+           (fn [idx variant]
+             (if-let [priority (get variant-priority-order variant)]
+               (+ priority (* idx (count variant-priority-order)))
+               0)))
+         (apply +))
+    0))
+
+(defn- prefix-priority
+  [rule]
+  [(media-query-priority rule) (state-prefix-priority rule)])
+
 (defn rule-comparator
   "Compares the Garden rules provided by Girouette,
    so they can be ordered correctly in a style file."
   [rule1 rule2]
-  (let [is-media-query1 (and (instance? CSSAtRule rule1)
-                             (= (:identifier rule1) :media))
-        is-media-query2 (and (instance? CSSAtRule rule2)
-                             (= (:identifier rule2) :media))]
-    (compare [is-media-query1 (if is-media-query1 (media-query-priority rule1) 0)
+  (let [has-prefix-1? (->> (get-in (meta rule1) [:girouette/props :prefixes])
+                           vals
+                           (some some?)
+                           boolean)
+        has-prefix-2? (->> (get-in (meta rule1) [:girouette/props :prefixes])
+                           vals
+                           (some some?)
+                           boolean)]
+    (compare [has-prefix-1? (if has-prefix-1? (prefix-priority rule1) 0)
               (-> rule1 meta :girouette/component :ordering-level)]
-             [is-media-query2 (if is-media-query2 (media-query-priority rule2) 0)
+             [has-prefix-2? (if has-prefix-2? (prefix-priority rule2) 0)
               (-> rule2 meta :girouette/component :ordering-level)])))
+
+(comment
+
+  (compare [0 [1 2]]
+           [0 [2 1]]))

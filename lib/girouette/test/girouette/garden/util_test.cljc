@@ -44,4 +44,20 @@
 
     "md:grid-cols-1"
     "dark:text-white"
-    1))
+    1
+
+    "hover:bg-red-500"
+    "active:bg-blue-500"
+    -1
+
+    "active:hover:bg-red-500"
+    "active:bg-blue-500"
+    1
+
+    "disabled:bg-red-500"
+    "hover:bg-red-200"
+    -1
+
+    "focus:disabled:bg-red-500"
+    "hover:bg-red-200"
+    -1))
